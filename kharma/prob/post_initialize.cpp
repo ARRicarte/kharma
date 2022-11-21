@@ -70,7 +70,7 @@ void KHARMA::SeedAndNormalizeB(ParameterInput *pin, Mesh *pmesh)
 
         Flag("Seeding magnetic field");
         // Seed the magnetic field and find the minimum beta
-        Real beta_min = 1.e100, p_max = 0., bsq_max = 0.;
+        Real beta_min = 1.e100, p_max = 0., bsq_max = 0., bsq_min = 0.;
         for (auto &pmb : pmesh->block_list) {
             auto& rc = pmb->meshblock_data.Get();
 
@@ -95,6 +95,7 @@ void KHARMA::SeedAndNormalizeB(ParameterInput *pin, Mesh *pmesh)
             if (beta_calc_legacy) {
                 Real bsq_local = GetLocalBsqMax(rc.get());
                 if(bsq_local > bsq_max) bsq_max = bsq_local;
+                if(bsq_local < bsq_min) bsq_min = bsq_local;
                 Real p_local = GetLocalPMax(rc.get());
                 if(p_local > p_max) p_max = p_local;
             } else {
@@ -114,6 +115,7 @@ void KHARMA::SeedAndNormalizeB(ParameterInput *pin, Mesh *pmesh)
             // Calculate current beta_min value
             if (beta_calc_legacy) {
                 bsq_max = MPIMax(bsq_max);
+                bsq_min = MPIMin(bsq_min);
                 p_max = MPIMax(p_max);
                 beta_min = p_max / (0.5 * bsq_max);
             } else {
@@ -122,6 +124,8 @@ void KHARMA::SeedAndNormalizeB(ParameterInput *pin, Mesh *pmesh)
 
             if (pin->GetInteger("debug", "verbose") > 0) {
                 if (MPIRank0())
+                    cerr << "bsq_max pre-norm: " << bsq_max << endl;
+                    cerr << "bsq_min pre-norm: " << bsq_min << endl;
                     cerr << "Beta min pre-norm: " << beta_min << endl;
             }
 

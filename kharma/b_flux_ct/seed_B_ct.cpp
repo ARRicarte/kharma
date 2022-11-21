@@ -185,7 +185,7 @@ TaskStatus B_FluxCT::SeedBField(MeshBlockData<Real> *rc, ParameterInput *pin)
                 break;
             case BSeedType::ryan_quadrupole:
                 // BR's smoothed poloidal in-torus, but turned into a quadrupole
-                q = pow(r / rin, 4) * cos(th) * pow(sin(th), 3) * exp(-r / 400) * rho_av - min_rho_q;
+                q = (pow(r / rin, 3) * pow(sin(th), 3) * exp(-r / 400) * rho_av - min_rho_q) * cos(th);
                 break;
             case BSeedType::r3s3:
                 // Just the r^3 sin^3 th term
@@ -235,8 +235,11 @@ TaskStatus B_FluxCT::SeedBField(MeshBlockData<Real> *rc, ParameterInput *pin)
                 G.lower(A_tilt, A_tilt_lower, k, j, i, Loci::corner);
                 VLOOP A(v, k, j, i) = A_tilt_lower[1+v];
             } else {
+                // ARR:  This seems like a weird thing to do.  Was the point to get rid of uninitialized memory? Breaks cases where you need multiple loops.
                 // Some problems rely on a very accurate A->B, which the 
-                A(V3, k, j, i) = max(q, 0.);
+                if (b_field_flag != BSeedType::ryan_quadrupole) {
+				    A(V3, k, j, i) = max(q, 0.);
+                }
             }
         }
     );
